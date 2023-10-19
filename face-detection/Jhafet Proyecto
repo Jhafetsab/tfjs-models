@@ -1,0 +1,43 @@
+import cv2
+import numpy as np
+import tensorflow as tf
+
+# Cargamos el modelo de detección de rostros pre-entrenado de TensorFlow
+model = tf.saved_model.load("ssd_mobilenet_v2_coco/saved_model")
+
+# Cargamos el clasificador de rostros de OpenCV
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+# Cargamos la imagen en la que deseamos detectar rostros
+image_path = "tu_imagen.jpg"
+image = cv2.imread(image_path)
+
+# Escalamos la imagen para que se ajuste al modelo
+input_tensor = tf.convert_to_tensor(image)
+input_tensor = tf.image.resize(input_tensor, (300, 300))
+input_tensor = tf.expand_dims(input_tensor, axis=0)
+
+# Realizamos la detección de objetos utilizando el modelo de TensorFlow
+detections = model(input_tensor)
+
+# Obtenemos las coordenadas de los rostros detectados
+boxes = detections['detection_boxes'][0].numpy()
+scores = detections['detection_scores'][0].numpy()
+
+# Iteramos sobre las detecciones y dibujamos un rectángulo alrededor de los rostros
+for i in range(len(boxes)):
+    if scores[i] > 0.5:
+        ymin, xmin, ymax, xmax = boxes[i]
+        h, w, _ = image.shape
+        left = int(xmin * w)
+        top = int(ymin * h)
+        right = int(xmax * w)
+        bottom = int(ymax * h)
+
+        # Dibujamos un rectángulo alrededor del rostro
+        cv2.rectangle(image, (left, top), (right, bottom), (0, 255, 0), 2)
+
+# Mostramos la imagen con los rostros detectados
+cv2.imshow('Detección de rostros', image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
